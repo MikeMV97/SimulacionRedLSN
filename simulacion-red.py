@@ -46,7 +46,7 @@ Xi		= 18		# Num. ranuras de tiempo estado Sleeping
 N		= [5, 10, 15, 20]				# Num Nodos por Grado
 W		= [16, 32, 64, 128, 256]		# Num Max de miniranuras
 Lambda	= [0.0005, 0.001, 0.005, 0.03]	# Tasa de generacion de pkts por grado
-sink 	= 1			# ID nodo sink
+sink 	= 0			# ID nodo sink
 N_case	= N[0]
 Lambda_case = Lambda[0]
 
@@ -77,6 +77,7 @@ def simulacion():
 
 		# test(buffer, nodos_perdidos)
 		
+		nodos_por_Tx = []
 		for grado_i in range(H, -1, 1):
 			# Verificar cuantos nodos tienen un buffer con datos.
 			nodos_contendientes = get_nodes_with_data(grado_i, buffer)
@@ -84,15 +85,16 @@ def simulacion():
 			nodo_ganador = contencion_del_canal(nodos_contendientes)
 			if nodo_ganador >= 0: # no_colission, Transmitir
 				# Eliminar pkt transmitido del nodo_ganador
-				buffer[grado_i][nodo_ganador] -= 1
-				# Recibir pkt en siguiente nodo
-				if buffer[grado_i - 1][]:
-					insertar_pkt_recibido(grado_i - 1)
-				
+				nodos_por_Tx.append(nodo_ganador)
 			else:  # Colision
-				Tomar estadistica, pkt perdido por colision
-				Eliminar pkts que colisionaron de Nodos ganadores
-		
+				# Tomar estadistica, pkt perdido por colision
+				# Eliminar pkts que colisionaron de Nodos ganadores
+
+		# buffer[grado_i][nodo_ganador] -= 1
+		# 		# Recibir pkt en siguiente nodo
+		# 		if buffer[grado_i - 1][]:
+		# 			insertar_pkt_recibido(grado_i - 1)
+
 		t_sim += t_slot
 
 
@@ -132,7 +134,7 @@ def contencion_del_canal(nodos_contendientes):
 	# nodos.sort()
 	# nodo_ganador = nodos[0][1]
 	idx_ganador = rng_arrival.integers(0, len(nodos_contendientes))
-	return nodos_contendientes[idx_ganador]	
+	return nodos_contendientes[idx_ganador]	if len(nodos_contendientes) > 0 else -1
 
 
 # def insertar_pkt_recibido(grado):
