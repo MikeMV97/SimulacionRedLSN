@@ -220,6 +220,7 @@ def get_promedio_retardos(retardo_pkts_grado):
 			rets.append(np.average(ret))
 		else:
 			rets.append(0.)
+	return rets
 
 
 def test(buffer, nodos_perdidos):
@@ -304,9 +305,14 @@ def grafica_retardos(x, legends, variable):
 def generar_graficas(variable):
 	if variable == 'N':
 		legends = ['N = ' + str(nn) for nn in N]
-		x 		= range(H+1)
-	grafica_pkts_perdidos(x, legends)
-	grafica_retardos(x, legends)
+	if variable == 'lambda':
+		legends = ['λ = ' + str(ll) for ll in Lambda]
+	if variable == 'omega':
+		legends = ['ω = ' + str(ww) for ww in W]
+	x = range( H + 1 )
+	grafica_pkts_perdidos(x, legends, variable)
+	print(retardos_pkts)
+	grafica_retardos(x, legends, variable)
 	grafica_throughput(variable)
 
 if __name__ == '__main__':
