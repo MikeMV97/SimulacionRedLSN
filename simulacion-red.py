@@ -1,11 +1,6 @@
 from math import log10
-import types
-from typing import List, Tuple
 import numpy as np
-from numpy.core.fromnumeric import var
 from numpy.random import default_rng
-# Graficas:
-# from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
 # INICIALIZACION PARAMETROS:
@@ -29,33 +24,25 @@ W_case = W[0]
 pkts_perdidos = []
 retardos_pkts = []
 throughputs_sim = []
-TC = DIFS + 3*SIFS + (Sigma*W_case) + t_RTS + t_CTS + t_ACK + t_DATA
 
 def simulacion(iter):
-	global W_case, N_case, Lambda_case, pkts_perdidos, retardos_pkts, contador_pkts, TC
+	global W_case, N_case, Lambda_case, pkts_perdidos, retardos_pkts, contador_pkts
 	# INICIALIZACION VARIABLES DE SIMULACION:
 	t_sim		= 0.001					# Este siempre ira avanzando (No se mide de forma continua, solo queremos ir midiendo instantes en que se van generando los eventos)
 	t_arribo	= 0						# Nuevo tiempo de arribo, con esto encontramos el siguiente tiempo en que se genera un arribo
 	t_slot		= DIFS + 3*SIFS + (Sigma*W_case) + t_RTS + t_CTS + t_ACK + t_DATA
 	Tc 			= (2 + Xi) * t_slot		# Tiempo_Tx + Tiempo_Rx + Tiempo_Sleeping
-	TC = Tc
 
 	nodos_perdidos	= np.zeros( (H+1,1), dtype=np.int32 )
-	# retardo_pkts_grado = np.zeros( (H+1,1), dtype=np.int32 )
 	retardo_pkts_grado = generar_lista_lista()
 	contador_pkts 	= 0
-	# buffer 		= [list([list()]*N_case)]*(H+1)  # Para cada nodo hay una lista de Pkts (se almacena time de creacion)
 	buffer 			= generar_buffer()
 	NUM_CICLOS		= 300_000
-	# print('N_case:', N_case)
-	# print(np.shape(buffer))		# buffer[GRADO][NODO] = LIST(ta_NODO1,ta_NODO2,...)
-	while t_sim < NUM_CICLOS*Tc:#300_000*Tc:
+	while t_sim < NUM_CICLOS*Tc:
 
 		# print('__________GENERACION PKTS_____________')
-		while t_arribo < t_sim : # Ya ocurrio un arribo en la red
-			
+		while t_arribo < t_sim : # Ya ocurrio un arribo en la red			
 			contador_pkts += 1
-			
 			# Se_asigna_el_pkt_recibido_a_un_nodo_en_un_grado
 			grado_rand, nodo_rand = select_grade_and_node()
 
@@ -68,8 +55,6 @@ def simulacion(iter):
 			# Se define un nuevo tiempo de arribo
 			t_arribo = generate_arrival_time((t_arribo + t_sim ) / 2.)  # (t_sim)
 
-		# test(buffer, nodos_perdidos)
-		# print(buffer)
 		# print('__________ENVIO PKTS_____________')
 		nodos_contendientes = []
 		for grado_i in range(H, 0, -1):
@@ -79,43 +64,31 @@ def simulacion(iter):
 			# Proceso de contencion (se genera el contador de Backoff para estos nodos contendientes en el mismo  grado)
 			# nodo_ganador = contencion_del_canal(nodos_contendientes)
 			nodos_contendientes.sort()
-			# print('ORDENADA: ', nodos_contendientes)
-
+			
 			nodo_winner = -1
 			if len(nodos_contendientes) == 1:
 				nodo_winner = nodos_contendientes[0][1]
 			elif len(nodos_contendientes) > 1:
 				i = 0
-				# for i in range(0, len(nodos_contendientes) - 1):
 				while i < len(nodos_contendientes) - 1:
 					try:
 						if nodos_contendientes[i][0] < nodos_contendientes[i+1][0]:
 							nodo_winner = nodos_contendientes[i][1]
 							break
 						else: # Son iguales los backoff
-							# print('grad:',grado_i, 'nodo:',nodos_contendientes[i][1])
-							# print('buffer[', grado_i,']', buffer[ grado_i ])
 							nodos_perdidos[grado_i] += 2
 							eliminado = buffer[grado_i][nodos_contendientes[i][1]].pop(0)
-							# print('PRIMER POP', eliminado)
 							if len(buffer[grado_i][nodos_contendientes[i+1][1]]) > 0:
 								eliminado = buffer[grado_i][nodos_contendientes[i+1][1]].pop(0)
 								i += 1
-								# print('SEGUNDO POP ', eliminado)
-							# nodos_contendientes.pop(i)
-							# nodos_contendientes.pop(i)
 					except:
 						print('i:', i, 'Contendientes:', nodos_contendientes, 'len(n_cont):', len(nodos_contendientes))
 						print('BUFFER Nodo 1:', buffer[grado_i][nodos_contendientes[i][1]])
 						print('BUFFER Nodo 2:', buffer[grado_i][nodos_contendientes[i+1][1]])
 					i += 1
 
-			# print( 'nodo_winner:', nodo_winner )
-			# print('buffer[grado_i][nodo_winner]: ', buffer[grado_i][nodo_winner], ', shape:', np.shape(buffer[grado_i][nodo_winner]))
-			# print('shape (buffer[grado_i])', np.shape(buffer[grado_i]))
 			if nodo_winner != -1 and len(buffer[grado_i][nodo_winner]) > 0:
 				pkt_tx = buffer[grado_i][nodo_winner].pop(0)
-				# print('Pkt TX:', pkt_tx)
 				# Recibir pkt en siguiente nodo
 				nodo_rx = 0
 				if grado_i > 1:
@@ -125,18 +98,15 @@ def simulacion(iter):
 					buffer[grado_i-1][nodo_rx].append(pkt_tx)
 				else:
 					nodos_perdidos[grado_i-1] += 1
-		# print('\t___Leer SINK: ___') #', buffer[0][0], '
+		# print('\t___Leer SINK: ___')
 		# SINK
-		if len(buffer[0]) > 0:  # and len(buffer[0][0]) > 0:
+		if len(buffer[0]) > 0:
 			for pkt in buffer[0][0]:
-				# print('pkt: ', pkt)
 				retardo_pkt = t_sim - pkt[0]
 				retardo_pkts_grado[pkt[1]].append(retardo_pkt)
 			while len(buffer[0][0]) > 0:
 				buffer[0][0].pop(0)
 
-		# print('\t* pkts_perdidos:',nodos_perdidos)
-		# print('\t* retardo_pkts_grado:', retardo_pkts_grado)
 		t_sim += Tc
 	pkts_perdidos.append(nodos_perdidos)
 	throughputs_sim.append(contador_pkts / NUM_CICLOS)
@@ -151,8 +121,6 @@ def generar_pkt(tiempo_creacion, grado):
 
 def generar_nodo():
 	nod = []
-	# buffer = 0
-	# nod.append(list())
 	return nod
 
 def generar_grad(num):
@@ -181,7 +149,7 @@ rng_generacion_pkt_grado = default_rng()
 rng_generacion_pkt_nodo = default_rng()
 def select_grade_and_node():
 	grade = rng_generacion_pkt_grado.integers(1, H + 1, dtype=np.int32)
-	node = rng_generacion_pkt_nodo.integers(0, N_case, dtype=np.int32)
+	node  = rng_generacion_pkt_nodo.integers(0, N_case, dtype=np.int32)
 	return grade, node
 
 
@@ -190,26 +158,20 @@ VA_uniforme	= rng_arrival.uniform(0., 1., 1_000_000)
 VA_i = 0
 def generate_arrival_time(current_time):
 	global VA_i
-	nuevo_t		= - (1 / Lambda_case) * log10(1 - (VA_uniforme[VA_i]/1_000_000))  # Siguiente intervalo de tiempo en que se va a generar un pkt
-	# nuevo_t 	= VA_uniforme[VA_i]
-	VA_i = (VA_i+1) % 1_000_000
-	# print('tsim', current_time, 'ta', current_time + nuevo_t )
+	nuevo_t	= - (1 / Lambda_case) * log10(1 - (VA_uniforme[VA_i]/1_000_000))  # Siguiente intervalo de tiempo en que se va a generar un pkt
+	VA_i 	= (VA_i+1) % 1_000_000
 	return ( current_time + nuevo_t )
 
 
 def get_nodes_with_data(grado_i, buffer):
-	# print(np.shape(buffer[grado_i]))
-	# print('get_nodes_with_data(',grado_i, ',buffer)')
 	global W_case
 	nodes = []
 	for node in range(0, N_case):
-		# print('(grado_i,node): (', grado_i,',', node,')')
 		if len(buffer[grado_i]) == 0:
 			continue
 		if len(buffer[grado_i][node]) > 0:
 			num_backoff = rng_arrival.integers(0, W_case)
 			nodes.append([num_backoff, node])
-	# print('nodos a contender:', nodes)
 	return nodes
 
 
@@ -221,28 +183,6 @@ def get_promedio_retardos(retardo_pkts_grado):
 		else:
 			rets.append(0.)
 	return rets
-
-
-def test(buffer, nodos_perdidos):
-	print('buffer:', np.shape(buffer), 'perdidos:', np.shape(nodos_perdidos))
-
-
-def len_buff(buffer):
-	print(type(buffer))
-	print(np.shape(buffer))
-	count = 0
-	for elem in buffer:
-		count += 1
-	return count
-
-
-def graficar_con_interpolacion(x, y, x_lbl, y_lbl, my_title):
-	fig, ax = plt.subplots()
-	y_interp = interp1d(x, y, kind='cubic')
-	ax.plot(x, y_interp, '-')
-	ax.set_xlabel(x_lbl)
-	ax.set_ylabel(y_lbl)
-	ax.set_title(my_title)
 
 
 def grafica_throughput(variable):
@@ -261,7 +201,7 @@ def grafica_throughput(variable):
 		plt.xlabel('N (Nodos por grado)')
 	if variable == 'lambda':
 		plt.title('λ variable')
-		plt.xlabel('Pkt / seg')
+		plt.xlabel('λ Pkt / seg')
 	if variable == 'omega':
 		plt.title('ω variable')
 		plt.xlabel('Número de miniranuras ω')
@@ -311,7 +251,6 @@ def generar_graficas(variable):
 		legends = ['ω = ' + str(ww) for ww in W]
 	x = range( H + 1 )
 	grafica_pkts_perdidos(x, legends, variable)
-	print(retardos_pkts)
 	grafica_retardos(x, legends, variable)
 	grafica_throughput(variable)
 
