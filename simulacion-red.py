@@ -4,10 +4,10 @@ from numpy.random import default_rng
 import matplotlib.pyplot as plt
 
 # INICIALIZACION PARAMETROS:
-DIFS	= 10e-3		# 
-SIFS	= 5e-3		# 
+DIFS	= 10e-3		# Tiempo de Espacio entre tramas para poder transmitir
+SIFS	= 5e-3		# Tiempo para procesar y responder a una trama
 t_RTS	= 11e-3		# Tiempo de Tx de pkt RTS
-t_CTS	= 11e-3		# 
+t_CTS	= 11e-3		# Tiempo de Tx de pkt CTS
 t_ACK	= 11e-3		# Tiempo de Tx de pkt de confirmacion
 t_DATA	= 43e-3		# Tiempo de Tx de pkt de datos
 Sigma	= 1e-3		# Tiempode miniranura
