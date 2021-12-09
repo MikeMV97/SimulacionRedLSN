@@ -53,7 +53,7 @@ def simulacion(iter):
 				nodos_perdidos[grado_rand] += 1
 
 			# Se define un nuevo tiempo de arribo
-			t_arribo = generate_arrival_time((t_arribo + t_sim ) / 2.)  # (t_sim)
+			t_arribo = generate_arrival_time((t_arribo + 2*t_sim ) / 3.)  # (t_sim)
 
 		# print('__________ENVIO PKTS_____________')
 		nodos_contendientes = []
@@ -154,11 +154,11 @@ def select_grade_and_node():
 
 
 rng_arrival = default_rng()
-VA_uniforme	= rng_arrival.uniform(0., 1., 1_000_000)
+VA_uniforme	= rng_arrival.uniform(0., 0.1, 1_000_000)
 VA_i = 0
 def generate_arrival_time(current_time):
 	global VA_i
-	nuevo_t	= - (1 / Lambda_case) * log10(1 - (VA_uniforme[VA_i]/1_000_000))  # Siguiente intervalo de tiempo en que se va a generar un pkt
+	nuevo_t	= - (1 / Lambda_case) * log10(1 - VA_uniforme[VA_i])  # Siguiente intervalo de tiempo en que se va a generar un pkt
 	VA_i 	= (VA_i+1) % 1_000_000
 	return ( current_time + nuevo_t )
 
@@ -259,7 +259,7 @@ if __name__ == '__main__':
 	for iter, n_case in zip(range(0,len(N)), N):
 		N_case = n_case
 		W_case = W[0]
-		Lambda_case = Lambda[0]
+		Lambda_case = Lambda[0]*N_case*H
 		simulacion(iter)
 	generar_graficas('N')
 	print('________________Lambda variable___________________')
@@ -269,7 +269,7 @@ if __name__ == '__main__':
 	for iter, lamb_case in zip(range(0,len(Lambda)), Lambda):
 		N_case = N[1]
 		W_case = W[1]
-		Lambda_case = lamb_case
+		Lambda_case = lamb_case*N_case*H
 		simulacion(iter)
 	generar_graficas('lambda')
 	print('________________Omega variable___________________')
@@ -279,6 +279,6 @@ if __name__ == '__main__':
 	for iter, omega_case in zip(range(0,len(W)), W):
 		N_case = N[1]
 		W_case = omega_case
-		Lambda_case = Lambda[2]
+		Lambda_case = Lambda[2]*N_case*H
 		simulacion(iter)
 	generar_graficas('omega')
